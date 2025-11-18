@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Professional Gate Management System for Society">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GateKeeper">
+    
+    <title>Gate Management System - Admin Panel</title>
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/shared/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/shared/icons/icon-72x72.png">
+    <link rel="apple-touch-icon" href="/shared/icons/icon-192x192.png">2.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/shared/styles.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader"></div>
+        <p>Loading GateKeeper...</p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen hidden">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="app-icon">🏘️</div>
+                <h1>GateKeeper</h1>
+                <p>Society Gate Management</p>
+            </div>
+            
+            <div class="role-selection" id="role-selection">
+                <h3 style="text-align: center; margin-bottom: 1.5rem; color: var(--text-primary);">Select Your Role</h3>
+                <div class="role-cards">
+                    <button class="role-card" onclick="selectRole('guard')">
+                        <div class="role-icon">🛡️</div>
+                        <h4>Security Guard</h4>
+                        <p>Entry visitor details</p>
+                    </button>
+                    <button class="role-card" onclick="selectRole('resident')">
+                        <div class="role-icon">🏠</div>
+                        <h4>Resident</h4>
+                        <p>Approve/Reject visitors</p>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="login-form" class="login-form hidden">
+                <button type="button" class="btn-back" onclick="backToRoleSelection()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Back
+                </button>
+                
+                <h3 id="login-role-title" style="text-align: center; margin: 1rem 0;">Guard Login</h3>
+                
+                <div class="form-group">
+                    <label for="email">Email / House Number</label>
+                    <input type="text" id="email" placeholder="guard@society.com or House #12" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span class="btn-text">Sign In</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p>First time? Contact admin for credentials</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guard App -->
+    <div id="guard-app" class="app hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">🛡️ Guard Entry</h1>
+                </div>
+                <div class="header-right">
+                    <button id="guard-theme-toggle" class="icon-btn" aria-label="Toggle theme">
+                        <svg class="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon hidden" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <button id="logout-btn" class="icon-btn" aria-label="Logout">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav id="nav-menu" class="nav-menu">
+            <div class="nav-header">
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <h3 id="user-name">Guard Name</h3>
+                        <p id="user-role">Security Guard</p>
+                    </div>
+                </div>
+                <button id="nav-close" class="icon-btn" aria-label="Close menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <ul class="nav-list">
+                <li>
+                    <button class="nav-item active" data-view="dashboard">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Dashboard</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-item" data-view="visitors">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span>Visitors</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-item" data-view="residents">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Residents</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-item" data-view="history">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>History</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <section id="dashboard-view" class="view active">
+                <div class="view-header">
+                    <h2>Dashboard</h2>
+                    <p class="subtitle">Today's Overview</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-primary">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Active Visitors</p>
+                            <p class="stat-value" id="active-visitors">0</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-success">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Today's Entries</p>
+                            <p class="stat-value" id="today-entries">0</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-warning">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Total Houses</p>
+                            <p class="stat-value">48</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-danger">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Pending Exits</p>
+                            <p class="stat-value" id="pending-exits">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-section">
+                    <div class="section-header">
+                        <h3>Recent Visitors</h3>
+                        <button class="btn btn-sm btn-secondary" id="add-visitor-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add Visitor
+                        </button>
+                    </div>
+                    <div id="recent-visitors" class="visitor-list"></div>
+                </div>
+            </section>
+
+            <!-- Visitors View -->
+            <section id="visitors-view" class="view">
+                <div class="view-header">
+                    <h2>Visitor Management</h2>
+                    <button class="btn btn-primary" id="new-visitor-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        New Entry
+                    </button>
+                </div>
+
+                <div class="search-bar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="visitor-search" placeholder="Search visitors by name, phone, or house number...">
+                </div>
+
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="active">Active</button>
+                    <button class="filter-tab" data-filter="exited">Exited</button>
+                </div>
+
+                <div id="visitors-list" class="visitor-list"></div>
+            </section>
+
+            <!-- Residents View -->
+            <section id="residents-view" class="view">
+                <div class="view-header">
+                    <h2>Resident Directory</h2>
+                    <button class="btn btn-primary" id="add-resident-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Resident
+                    </button>
+                </div>
+
+                <div class="search-bar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="resident-search" placeholder="Search residents by name or house number...">
+                </div>
+
+                <div id="residents-grid" class="residents-grid"></div>
+            </section>
+
+            <!-- History View -->
+            <section id="history-view" class="view">
+                <div class="view-header">
+                    <h2>Visit History</h2>
+                    <div class="date-filter">
+                        <input type="date" id="history-date" class="date-input">
+                    </div>
+                </div>
+
+                <div class="search-bar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="history-search" placeholder="Search history...">
+                </div>
+
+                <div id="history-list" class="history-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Visitor Entry Modal -->
+    <div id="visitor-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">New Visitor Entry</h3>
+                <button class="modal-close" aria-label="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="visitor-form" class="modal-form">
+                <input type="hidden" id="visitor-id">
+                
+                <div class="form-group">
+                    <label for="visitor-name">Visitor Name *</label>
+                    <input type="text" id="visitor-name" placeholder="Enter full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitor-phone">Phone Number *</label>
+                    <input type="tel" id="visitor-phone" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitor-house">House Number *</label>
+                    <select id="visitor-house" required>
+                        <option value="">Select House</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitor-purpose">Purpose of Visit *</label>
+                    <select id="visitor-purpose" required>
+                        <option value="">Select Purpose</option>
+                        <option value="Personal Visit">Personal Visit</option>
+                        <option value="Delivery">Delivery</option>
+                        <option value="Service">Service (Plumber/Electrician)</option>
+                        <option value="Contractor">Contractor</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitor-vehicle">Vehicle Number (Optional)</label>
+                    <input type="text" id="visitor-vehicle" placeholder="e.g., DL01AB1234" style="text-transform: uppercase">
+                </div>
+
+                <div class="form-group">
+                    <label for="visitor-notes">Additional Notes</label>
+                    <textarea id="visitor-notes" rows="3" placeholder="Any special instructions..."></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">Save Entry</span>
+                        <span class="btn-loader hidden"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resident Modal -->
+    <div id="resident-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Resident</h3>
+                <button class="modal-close" aria-label="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="resident-form" class="modal-form">
+                <input type="hidden" id="resident-id">
+                
+                <div class="form-group">
+                    <label for="resident-house-num">House Number *</label>
+                    <input type="number" id="resident-house-num" min="1" max="48" placeholder="1-48" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="resident-owner">Owner Name *</label>
+                    <input type="text" id="resident-owner" placeholder="Enter owner name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="resident-contact">Contact Number *</label>
+                    <input type="tel" id="resident-contact" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="resident-members">Family Members</label>
+                    <input type="number" id="resident-members" min="1" placeholder="Number of members">
+                </div>
+
+                <div class="form-group">
+                    <label for="resident-vehicles">Vehicle Count</label>
+                    <input type="number" id="resident-vehicles" min="0" placeholder="Number of vehicles">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">Save Resident</span>
+                        <span class="btn-loader hidden"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Exit Confirmation Modal -->
+    <div id="exit-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Exit Visitor</h3>
+                <button class="modal-close" aria-label="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p>Mark this visitor as exited?</p>
+                <p class="text-muted" id="exit-visitor-name"></p>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-exit-btn">
+                    <span class="btn-text">Confirm Exit</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="/shared/firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/shared/sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>

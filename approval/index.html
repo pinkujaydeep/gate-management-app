@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Gate Management System - Visitor Approval">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GateKeeper">
+    
+    <title>Gate Management System - Visitor Approval</title>
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/shared/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/shared/icons/icon-72x72.png">
+    <link rel="apple-touch-icon" href="/shared/icons/icon-192x192.png">2.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/shared/styles.css">
+    <link rel="stylesheet" href="/shared/styles-addon.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader"></div>
+        <p>Loading GateKeeper...</p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen hidden">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="app-icon">🏘️</div>
+                <h1>GateKeeper</h1>
+                <p>Society Gate Management</p>
+            </div>
+            
+            <!-- Role Selection -->
+            <div class="role-selection" id="role-selection">
+                <h3 style="text-align: center; margin-bottom: 1.5rem; color: var(--text-primary);">Select Your Role</h3>
+                <div class="role-cards">
+                    <button class="role-card" onclick="selectRole('guard')">
+                        <div class="role-icon">🛡️</div>
+                        <h4>Security Guard</h4>
+                        <p>Enter visitor details</p>
+                    </button>
+                    <button class="role-card" onclick="selectRole('resident')">
+                        <div class="role-icon">🏠</div>
+                        <h4>House Owner</h4>
+                        <p>Approve/Reject visitors</p>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="login-form hidden">
+                <button type="button" class="btn-back" onclick="backToRoleSelection()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Back
+                </button>
+                
+                <h3 id="login-role-title" style="text-align: center; margin: 1rem 0;">Login</h3>
+                
+                <input type="hidden" id="selected-role">
+                
+                <div class="form-group hidden" id="email-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="your.email@example.com">
+                </div>
+                
+                <div class="form-group hidden" id="house-group">
+                    <label for="resident-email">Email Address</label>
+                    <input type="email" id="resident-email" placeholder="your.email@example.com">
+                </div>
+                
+                <div class="form-group hidden" id="house-number-group">
+                    <label for="house-number-login">Your House Number</label>
+                    <input type="number" id="house-number-login" min="1" max="48" placeholder="Enter house number (1-48)">
+                    <small class="text-muted" style="display: block; margin-top: 0.5rem; font-size: 0.875rem;">This will be linked to your email</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span class="btn-text">Sign In</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p id="login-footer-text">Select your role to continue</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guard App -->
+    <div id="guard-app" class="app hidden">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">🛡️ Visitor Entry</h1>
+                </div>
+                <div class="header-right">
+                    <button id="guard-theme-toggle" class="icon-btn" aria-label="Toggle theme">
+                        <svg class="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon hidden" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <button id="guard-logout-btn" class="icon-btn" aria-label="Logout">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Visitor Entry Form -->
+            <div class="entry-container">
+                <div class="card entry-card">
+                    <h2>Register Visitor</h2>
+                    <p class="form-subtitle">Enter visitor details. The house owner will be notified for approval.</p>
+                    <form id="guard-visitor-form">
+                        <div class="form-group">
+                            <label for="guard-visitor-name">Visitor Name *</label>
+                            <input type="text" id="guard-visitor-name" placeholder="Full name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="guard-visitor-phone">Phone Number *</label>
+                            <input type="tel" id="guard-visitor-phone" placeholder="10-digit number" pattern="[0-9]{10}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="guard-house-number">Select House *</label>
+                            <select id="guard-house-number" required>
+                                <option value="">Choose house number</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="guard-purpose">Purpose of Visit *</label>
+                            <select id="guard-purpose" required>
+                                <option value="">Select purpose</option>
+                                <option value="Personal Visit">Personal Visit</option>
+                                <option value="Delivery">Delivery</option>
+                                <option value="Service">Service (Plumber/Electrician)</option>
+                                <option value="Contractor">Contractor</option>
+                                <option value="Guest">Guest</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="guard-vehicle">Vehicle Number (Optional)</label>
+                            <input type="text" id="guard-vehicle" placeholder="e.g., DL01AB1234" style="text-transform: uppercase">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="guard-notes">Additional Notes</label>
+                            <textarea id="guard-notes" rows="3" placeholder="Any special instructions..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">
+                            <span class="btn-text">Submit Entry</span>
+                            <span class="btn-loader hidden"></span>
+                        </button>
+                    </form>
+                    
+                    <div id="guard-success-message" class="alert alert-success hidden" style="margin-top: 1.5rem;">
+                        ✅ Entry submitted! House owner will be notified.
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Resident App -->
+    <div id="resident-app" class="app hidden">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">🏠 House <span id="resident-house-number"></span></h1>
+                </div>
+                <div class="header-right">
+                    <button id="resident-refresh-btn" class="icon-btn" aria-label="Refresh">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                    <button id="resident-theme-toggle" class="icon-btn" aria-label="Toggle theme">
+                        <svg class="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon hidden" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <button id="resident-logout-btn" class="icon-btn" aria-label="Logout">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Pending Approvals -->
+            <div class="approval-container">
+                <div class="stats-summary">
+                    <div class="stat-box pending-box">
+                        <div class="stat-number" id="resident-pending-count">0</div>
+                        <div class="stat-label">Awaiting Approval</div>
+                    </div>
+                    <div class="stat-box approved-box">
+                        <div class="stat-number" id="resident-approved-count">0</div>
+                        <div class="stat-label">Approved Today</div>
+                    </div>
+                </div>
+
+                <!-- Pending Requests -->
+                <div class="section">
+                    <h2>Pending Visitor Requests</h2>
+                    <div id="resident-pending-list" class="approval-list"></div>
+                </div>
+
+                <!-- Today's History -->
+                <div class="section">
+                    <h2>Today's Visitor History</h2>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all" onclick="filterResidentHistory('all')">All</button>
+                        <button class="filter-tab" data-filter="approved" onclick="filterResidentHistory('approved')">Approved</button>
+                        <button class="filter-tab" data-filter="rejected" onclick="filterResidentHistory('rejected')">Rejected</button>
+                    </div>
+                    <div id="resident-history-list" class="approval-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="/shared/firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/shared/sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>

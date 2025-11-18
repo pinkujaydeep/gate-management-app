@@ -1,0 +1,17 @@
+{
+  "name": "gate-management-pwa",
+  "version": "1.0.0",
+  "description": "Professional Gate Management PWA for Society with 48 Houses",
+  "main": "index.html",
+  "scripts": {
+    "dev": "live-server --port=3000",
+    "build": "npm run copy-files",
+    "copy-files": "echo Build complete - ready for deployment"
+  },
+  "keywords": ["pwa", "gate-management", "firebase", "netlify"],
+  "author": "Gate Management Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

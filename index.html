@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gate Management System - Choose your interface">
+    <meta name="theme-color" content="#4f46e5">
+    <title>GateKeeper - Gate Management System</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/shared/icons/icon-72x72.png">
+    <link rel="apple-touch-icon" href="/shared/icons/icon-192x192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        .app-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #1a202c;
+        }
+
+        .card p {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-features {
+            text-align: left;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .card-features li {
+            color: #4a5568;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            list-style-position: inside;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="app-icon">🏘️</div>
+            <h1>GateKeeper</h1>
+            <p>Society Gate Management System</p>
+        </div>
+
+        <div class="cards">
+            <a href="/admin/" class="card">
+                <div class="card-icon">👨‍💼</div>
+                <h2>Admin Panel</h2>
+                <p>Comprehensive management dashboard for administrators</p>
+                <ul class="card-features">
+                    <li>Complete visitor management</li>
+                    <li>Resident database</li>
+                    <li>Analytics & reports</li>
+                    <li>Historical records</li>
+                    <li>Export capabilities</li>
+                </ul>
+                <div style="margin-top: 1.5rem;">
+                    <span class="btn">Access Admin Panel</span>
+                </div>
+            </a>
+
+            <a href="/approval/" class="card">
+                <div class="card-icon">🚪</div>
+                <h2>Gate Access System</h2>
+                <p>Streamlined interface for guards and residents</p>
+                <ul class="card-features">
+                    <li>Guard visitor entry</li>
+                    <li>Real-time notifications</li>
+                    <li>Resident approval system</li>
+                    <li>Quick access controls</li>
+                    <li>Mobile optimized</li>
+                </ul>
+                <div style="margin-top: 1.5rem;">
+                    <span class="btn">Open Gate System</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 GateKeeper - Professional Society Management</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -717,21 +717,33 @@ function updateThemeIcon(theme) {
 
 // UI State Management
 function showLoading() {
-    elements.loadingScreen.classList.remove('hidden');
+    if (elements.loadingScreen) {
+        elements.loadingScreen.classList.remove('hidden');
+    }
 }
 
 function hideLoading() {
-    elements.loadingScreen.classList.add('hidden');
+    if (elements.loadingScreen) {
+        elements.loadingScreen.classList.add('hidden');
+    }
 }
 
 function showLogin() {
-    elements.loginScreen.classList.remove('hidden');
-    elements.app.classList.add('hidden');
+    if (elements.loginScreen) {
+        elements.loginScreen.classList.remove('hidden');
+    }
+    if (elements.app) {
+        elements.app.classList.add('hidden');
+    }
 }
 
 function showApp() {
-    elements.loginScreen.classList.add('hidden');
-    elements.app.classList.remove('hidden');
+    if (elements.loginScreen) {
+        elements.loginScreen.classList.add('hidden');
+    }
+    if (elements.app) {
+        elements.app.classList.remove('hidden');
+    }
 }
 
 function setButtonLoading(button, loading) {

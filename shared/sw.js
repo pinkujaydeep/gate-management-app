@@ -4,13 +4,14 @@ const DYNAMIC_CACHE = 'dynamic-v1';
 
 const STATIC_ASSETS = [
     '/',
-    '/index.html',
-    '/styles.css',
-    '/app.js',
-    '/firebase-config.js',
-    '/manifest.json',
-    '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png'
+    '/admin/',
+    '/approval/',
+    '/shared/styles.css',
+    '/shared/styles-addon.css',
+    '/shared/firebase-config.js',
+    '/shared/manifest.json',
+    '/shared/icons/icon-192x192.png',
+    '/shared/icons/icon-512x512.png'
 ];
 
 // Install Event

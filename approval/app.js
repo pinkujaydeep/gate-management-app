@@ -282,20 +282,31 @@ async function loadResidentData() {
     today.setHours(0, 0, 0, 0);
     
     // Real-time listener for visitors to this house
+    // Simplified query without composite index requirement
     db.collection('visitors')
         .where('houseNumber', '==', state.houseNumber)
-        .where('createdAt', '>=', today)
-        .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
-            state.visitors = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            // Filter and sort in JavaScript instead of Firestore
+            state.visitors = snapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }))
+                .filter(visitor => {
+                    const visitorDate = visitor.createdAt?.toDate() || new Date(0);
+                    return visitorDate >= today;
+                })
+                .sort((a, b) => {
+                    const dateA = a.createdAt?.toDate() || new Date(0);
+                    const dateB = b.createdAt?.toDate() || new Date(0);
+                    return dateB - dateA; // descending order
+                });
             updateResidentStats();
             renderResidentPending();
             renderResidentHistory();
         }, error => {
             console.error('Error loading visitors:', error);
+            showToast('Failed to load visitor data', 'error');
         });
 }
 

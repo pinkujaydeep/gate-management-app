@@ -72,9 +72,40 @@ async function initApp() {
         // Check auth state
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                state.currentUser = user;
-                await loadAppData();
-                showApp();
+                // Validate admin role
+                try {
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    
+                    if (!userDoc.exists) {
+                        // User document doesn't exist - log out
+                        await auth.signOut();
+                        showToast('Access denied. Admin account not configured.', 'error');
+                        showLogin();
+                        hideLoading();
+                        return;
+                    }
+                    
+                    const userData = userDoc.data();
+                    
+                    if (userData.role !== 'admin') {
+                        // Not an admin - log out
+                        await auth.signOut();
+                        showToast('Access denied. Admin privileges required.', 'error');
+                        showLogin();
+                        hideLoading();
+                        return;
+                    }
+                    
+                    // Valid admin user
+                    state.currentUser = user;
+                    await loadAppData();
+                    showApp();
+                } catch (error) {
+                    console.error('Role validation error:', error);
+                    await auth.signOut();
+                    showToast('Authentication error. Please try again.', 'error');
+                    showLogin();
+                }
             } else {
                 showLogin();
             }

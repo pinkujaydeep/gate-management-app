@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="description" content="Professional Gate Management System for Society">
     <meta name="theme-color" content="#4f46e5">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +22,7 @@
     <link rel="apple-touch-icon" href="/shared/icons/icon-192x192.png">
     
     <!-- Styles -->
-    <link rel="stylesheet" href="/shared/styles.css">
+    <link rel="stylesheet" href="/shared/styles.css?v=2">
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -96,7 +99,7 @@
         </header>
 
         <!-- Navigation -->
-        <nav class="nav" id="nav-menu">
+        <nav class="nav-menu" id="nav-menu">
             <div class="nav-header">
                 <h2>Menu</h2>
                 <button class="icon-btn" id="nav-close">
@@ -363,8 +366,18 @@
                     <input type="tel" id="resident-phone" required>
                 </div>
                 <div class="form-group">
-                    <label for="resident-email">Email (Optional)</label>
-                    <input type="email" id="resident-email">
+                    <label for="resident-email">Email *</label>
+                    <input type="email" id="resident-email" required>
+                    <small style="color: var(--text-tertiary); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                        This will be used for login credentials
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="resident-password">Password *</label>
+                    <input type="password" id="resident-password" required minlength="6">
+                    <small style="color: var(--text-tertiary); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                        Minimum 6 characters
+                    </small>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeResidentModal()">Cancel</button>
@@ -410,6 +423,12 @@
     <script src="/shared/firebase-config.js"></script>
     <script src="app.js"></script>
     <script>
+        // Prevent CSS caching during development
+        const cssLink = document.querySelector('link[href*="styles.css"]');
+        if (cssLink) {
+            cssLink.href = '/shared/styles.css?v=' + new Date().getTime();
+        }
+        
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

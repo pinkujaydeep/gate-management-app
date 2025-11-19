@@ -118,6 +118,12 @@ async function initApp() {
         // Setup theme
         initTheme();
         
+        // Ensure navigation is closed on load
+        const navMenu = document.getElementById('nav-menu');
+        const navOverlay = document.getElementById('nav-overlay');
+        if (navMenu) navMenu.classList.remove('active');
+        if (navOverlay) navOverlay.classList.remove('active');
+        
         // Populate house numbers
         populateHouseNumbers();
         
@@ -262,20 +268,69 @@ async function exitVisitor(visitorId) {
 
 // Resident Management
 async function addResident(data) {
+    let newUserId = null;
     try {
+        // Store current admin auth to restore later
+        const currentAdmin = auth.currentUser;
+        
+        // Create a secondary app instance to create user without logging out admin
+        const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+        const secondaryAuth = secondaryApp.auth();
+        
+        // Create the Firebase Authentication user in secondary instance
+        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(data.email, data.password);
+        newUserId = userCredential.user.uid;
+        
+        // Sign out from secondary instance and delete it
+        await secondaryAuth.signOut();
+        await secondaryApp.delete();
+        
+        // Create user document in Firestore with role
+        await db.collection('users').doc(newUserId).set({
+            email: data.email,
+            role: 'resident',
+            houseNumber: data.houseNumber,
+            name: data.ownerName,
+            createdAt: firebase.firestore.Timestamp.now(),
+            createdBy: state.currentUser.email
+        });
+        
+        // Create resident document
         const resident = {
-            ...data,
+            houseNumber: data.houseNumber,
+            ownerName: data.ownerName,
+            contactNumber: data.contactNumber,
+            email: data.email,
+            userId: newUserId,
             createdBy: state.currentUser.email,
             createdAt: firebase.firestore.Timestamp.now()
         };
         
         await db.collection('residents').add(resident);
         await loadResidents();
-        showToast('Resident added successfully', 'success');
+        showToast(`Resident added successfully! Login: ${data.email}`, 'success');
         closeModal(elements.residentModal);
     } catch (error) {
         console.error('Add resident error:', error);
-        showToast('Failed to add resident', 'error');
+        
+        // Clean up user if resident creation failed
+        if (newUserId) {
+            try {
+                await db.collection('users').doc(newUserId).delete();
+            } catch (cleanupError) {
+                console.error('Cleanup error:', cleanupError);
+            }
+        }
+        
+        if (error.code === 'auth/email-already-in-use') {
+            showToast('Email already registered', 'error');
+        } else if (error.code === 'auth/invalid-email') {
+            showToast('Invalid email address', 'error');
+        } else if (error.code === 'auth/weak-password') {
+            showToast('Password should be at least 6 characters', 'error');
+        } else {
+            showToast('Failed to add resident: ' + error.message, 'error');
+        }
         throw error;
     }
 }
@@ -542,9 +597,11 @@ function setupEventListeners() {
     // Navigation
     elements.menuBtn?.addEventListener('click', toggleMenu);
     elements.navClose?.addEventListener('click', toggleMenu);
+    document.getElementById('nav-overlay')?.addEventListener('click', toggleMenu);
     
     elements.navItems.forEach(item => {
         item.addEventListener('click', (e) => {
+            e.preventDefault();
             const view = e.currentTarget.dataset.view;
             switchView(view);
             toggleMenu();
@@ -598,15 +655,22 @@ function setupEventListeners() {
 
 // Modal Functions
 function openVisitorModal(visitorId = null) {
+    if (!elements.visitorModal || !elements.visitorForm) return;
     elements.visitorForm.reset();
-    document.getElementById('visitor-id').value = visitorId || '';
-    document.getElementById('modal-title').textContent = visitorId ? 'Edit Visitor' : 'New Visitor Entry';
+    const titleEl = document.getElementById('visitor-modal-title');
+    if (titleEl) {
+        titleEl.textContent = visitorId ? 'Edit Visitor' : 'New Visitor Entry';
+    }
     openModal(elements.visitorModal);
 }
 
 function openResidentModal(residentId = null) {
+    if (!elements.residentModal || !elements.residentForm) return;
     elements.residentForm.reset();
-    document.getElementById('resident-id').value = residentId || '';
+    const titleEl = document.getElementById('resident-modal-title');
+    if (titleEl) {
+        titleEl.textContent = residentId ? 'Edit Resident' : 'Add Resident';
+    }
     openModal(elements.residentModal);
 }
 
@@ -617,13 +681,35 @@ function showExitModal(visitorId, visitorName) {
 }
 
 function openModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('hidden');
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 function closeModal(modal) {
+    if (!modal) return;
     modal.classList.remove('active');
+    modal.classList.add('hidden');
     document.body.style.overflow = '';
+}
+
+function closeVisitorModal() {
+    if (elements.visitorModal) {
+        closeModal(elements.visitorModal);
+    }
+}
+
+function closeResidentModal() {
+    if (elements.residentModal) {
+        closeModal(elements.residentModal);
+    }
+}
+
+function closeExitModal() {
+    if (elements.exitModal) {
+        closeModal(elements.exitModal);
+    }
 }
 
 async function handleExitConfirm() {
@@ -636,6 +722,55 @@ async function handleExitConfirm() {
     } finally {
         setButtonLoading(btn, false);
     }
+}
+
+function confirmExit() {
+    handleExitConfirm();
+}
+
+function exportHistory() {
+    // Generate CSV export of history
+    try {
+        const csvData = convertHistoryToCSV(state.history);
+        downloadCSV(csvData, 'visitor-history.csv');
+        showToast('History exported successfully', 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Failed to export history', 'error');
+    }
+}
+
+function convertHistoryToCSV(data) {
+    const headers = ['Name', 'Phone', 'House Number', 'Purpose', 'Entry Time', 'Exit Time', 'Status'];
+    const rows = data.map(item => [
+        item.name,
+        item.phone,
+        item.houseNumber,
+        item.purpose,
+        new Date(item.entryTime?.toDate()).toLocaleString(),
+        item.exitTime ? new Date(item.exitTime.toDate()).toLocaleString() : 'N/A',
+        item.status
+    ]);
+    
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    return csvContent;
+}
+
+function downloadCSV(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Form Handlers
@@ -665,11 +800,11 @@ async function handleResidentSubmit(e) {
     const submitBtn = e.target.querySelector('button[type="submit"]');
     
     const data = {
-        houseNumber: parseInt(document.getElementById('resident-house-num').value),
-        ownerName: document.getElementById('resident-owner').value,
-        contactNumber: document.getElementById('resident-contact').value,
-        familyMembers: parseInt(document.getElementById('resident-members').value) || null,
-        vehicleCount: parseInt(document.getElementById('resident-vehicles').value) || null
+        houseNumber: parseInt(document.getElementById('resident-house').value),
+        ownerName: document.getElementById('resident-name').value,
+        contactNumber: document.getElementById('resident-phone').value,
+        email: document.getElementById('resident-email').value,
+        password: document.getElementById('resident-password').value
     };
     
     setButtonLoading(submitBtn, true);
@@ -704,17 +839,15 @@ function switchView(viewName) {
 }
 
 function toggleMenu() {
-    elements.navMenu.classList.toggle('active');
+    const navMenu = document.getElementById('nav-menu');
+    const overlay = document.getElementById('nav-overlay');
     
-    // Create or remove overlay
-    let overlay = document.querySelector('.nav-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'nav-overlay';
-        overlay.addEventListener('click', toggleMenu);
-        document.body.appendChild(overlay);
+    if (navMenu) {
+        navMenu.classList.toggle('active');
     }
-    overlay.classList.toggle('active');
+    if (overlay) {
+        overlay.classList.toggle('active');
+    }
 }
 
 // Theme Management
@@ -806,14 +939,29 @@ function showToast(message, type = 'info') {
 
 // Utility Functions
 function populateHouseNumbers() {
-    const select = document.getElementById('visitor-house');
-    if (!select) return;
+    const visitorHouseSelect = document.getElementById('visitor-house');
+    const residentHouseSelect = document.getElementById('resident-house');
     
-    for (let i = 1; i <= 48; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `House ${i}`;
-        select.appendChild(option);
+    // Populate visitor house dropdown
+    if (visitorHouseSelect) {
+        visitorHouseSelect.innerHTML = '<option value="">Select house</option>';
+        for (let i = 1; i <= 48; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `#${i}`;
+            visitorHouseSelect.appendChild(option);
+        }
+    }
+    
+    // Populate resident house dropdown
+    if (residentHouseSelect) {
+        residentHouseSelect.innerHTML = '<option value="">Select house</option>';
+        for (let i = 1; i <= 48; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `#${i}`;
+            residentHouseSelect.appendChild(option);
+        }
     }
 }
 
@@ -847,6 +995,11 @@ function getErrorMessage(code) {
 window.showExitModal = showExitModal;
 window.openVisitorModal = openVisitorModal;
 window.openResidentModal = openResidentModal;
+window.closeVisitorModal = closeVisitorModal;
+window.closeResidentModal = closeResidentModal;
+window.closeExitModal = closeExitModal;
+window.confirmExit = confirmExit;
+window.exportHistory = exportHistory;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {

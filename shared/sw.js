@@ -134,8 +134,14 @@ async function syncVisitors() {
 
 // Push Notifications (if needed in future)
 self.addEventListener('push', (event) => {
-    const data = event.data ? event.data.json() : {};
-    
+    let data = {};
+    try {
+        data = event.data ? event.data.json() : {};
+    } catch (e) {
+        // fallback if not JSON
+        data = { body: event.data ? event.data.text() : 'New notification' };
+    }
+    const title = data.title || 'GateKeeper';
     const options = {
         body: data.body || 'New notification',
         icon: '/shared/icons/icon-192x192.png',
@@ -143,10 +149,12 @@ self.addEventListener('push', (event) => {
         vibrate: [200, 100, 200],
         data: data
     };
-    
+    // Always show a system notification for every push event
     event.waitUntil(
-        self.registration.showNotification(data.title || 'GateKeeper', options)
+        self.registration.showNotification(title, options)
     );
+    // Optional: log for debugging
+    console.log('[Service Worker] Push received:', data);
 });
 
 self.addEventListener('notificationclick', (event) => {

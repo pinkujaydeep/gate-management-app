@@ -1,3 +1,76 @@
+/* Icon-based exit button for dark mode */
+/* Icon-based exit button for dark and light mode */
+.icon-exit-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: var(--exit-btn-bg, rgba(30,32,36,0.92));
+                border: 1px solid var(--exit-btn-border, #e0e0e0);
+        border-radius: 8px;
+        padding: 6px;
+        box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
+        cursor: pointer;
+        transition: background 0.2s;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+}
+.icon-exit-btn:hover, .icon-exit-btn:focus {
+        background: var(--exit-btn-bg-hover, rgba(50,52,58,1));
+}
+.icon-exit-btn svg {
+        display: block;
+        stroke: var(--exit-btn-icon, #ff7675);
+}
+/* Improved icon exit button for both themes */
+.icon-exit-btn {
+        background: var(--exit-btn-bg);
+        border: none;
+        box-shadow: none;
+        transition: background 0.2s;
+        outline: none;
+}
+@media (prefers-color-scheme: dark) {
+    .icon-exit-btn {
+        background: transparent;
+    }
+    .icon-exit-btn:hover, .icon-exit-btn:focus {
+        background: rgba(50,54,64,0.7);
+    }
+}
+.icon-exit-btn:hover, .icon-exit-btn:focus {
+        background: var(--exit-btn-bg-hover);
+}
+.icon-exit-btn svg {
+        stroke: var(--exit-btn-icon);
+}
+
+/* Light mode support */
+@media (prefers-color-scheme: light) {
+    :root {
+        --exit-btn-bg: #f7f7f7;
+        --exit-btn-bg-hover: #e0e0e0;
+        --exit-btn-icon: #d32f2f;
+        --exit-btn-border: #ececec;
+        --exit-btn-border-hover: #d32f2f;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --exit-btn-bg: transparent !important;
+        --exit-btn-bg-hover: rgba(50,54,64,0.7) !important;
+        --exit-btn-icon: #ff7675;
+        --exit-btn-border: transparent;
+    }
+}
+
+.icon-exit-btn {
+        /* ...existing code... */
+        border: 1px solid var(--exit-btn-border, transparent) !important;
+}
 /* Toast shake animation for error */
 .toast.shake {
     animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
@@ -8,27 +81,7 @@
     30%, 50%, 70% { transform: translateX(-4px); }
     40%, 60% { transform: translateX(4px); }
 }
-/* iOS Install Banner */
-.ios-install-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    background: #fffbe7;
-    color: #333;
-    z-index: 2000;
-    border-bottom: 1px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    padding: 0.7em 0;
-    text-align: center;
-    font-size: 1rem;
-}
-.ios-banner-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.7em;
-}
+
 /* Floating Action Button for Add Visitor */
 .fab-add-visitor {
     position: fixed;

@@ -417,9 +417,35 @@ function createGuardPendingCard(visitor) {
                 </div>
                 ` : ''}
             </div>
+            <div class="approval-actions" style="margin-top:1em;">
+                <button class="btn btn-sm btn-danger" onclick="markVisitorExit('${visitor.id}')">Mark Exit</button>
+            </div>
         </div>
     `;
 }
+
+// Guard: Mark visitor as exited
+async function markVisitorExit(visitorId) {
+    try {
+        console.log('[DEBUG] Marking exit for visitor:', visitorId);
+        if (!db) {
+            showToast('Database not initialized', 'error');
+            return;
+        }
+        await db.collection('visitors').doc(visitorId).update({
+            exitTime: firebase.firestore.Timestamp.now()
+        });
+        showToast('Visitor marked as exited', 'success');
+        console.log('[DEBUG] Exit marked successfully');
+        loadGuardData();
+    } catch (error) {
+        console.error('[ERROR] Failed to mark exit:', error);
+        showToast('Failed to mark exit: ' + error.message, 'error');
+    }
+}
+
+// Expose markVisitorExit to global scope
+window.markVisitorExit = markVisitorExit;
 
 function renderGuardHistory() {
     const filter = document.querySelector('#guard-app .filter-tab.active')?.dataset.filter || 'all';
@@ -447,10 +473,11 @@ function createGuardHistoryCard(visitor) {
     const isApproved = visitor.approvalStatus === 'approved';
     
     return `
-        <div class="history-card ${isApproved ? 'approved' : 'rejected'}">
+        <div class="history-card ${isApproved ? 'approved' : 'rejected'}" style="position:relative;">
             <div class="history-status">
                 ${isApproved ? '✅' : '❌'}
             </div>
+            ${isApproved && !visitor.exitTime ? `<button class=\"icon-exit-btn\" title=\"Mark Exit\" onclick=\"markVisitorExit('${visitor.id}')\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><polyline points=\"16 17 21 12 16 7\"/><line x1=\"21\" y1=\"12\" x2=\"9\" y2=\"12\"/></svg></button>` : ''}
             <div class="history-info">
                 <h4>${escapeHtml(visitor.name)}</h4>
                 <p class="text-muted">${escapeHtml(visitor.phone)} • House ${visitor.houseNumber}</p>
@@ -461,6 +488,7 @@ function createGuardHistoryCard(visitor) {
                 </div>
                 ${isApproved && entryTime ? `<p class="entry-time">✅ Approved: ${formatTime(entryTime)}</p>` : ''}
                 ${!isApproved && visitor.rejectedAt ? `<p class="entry-time">❌ Rejected: ${formatTime(visitor.rejectedAt.toDate())}</p>` : ''}
+                ${isApproved && visitor.exitTime ? `<p class="entry-time">🚪 Exited: ${formatTime(visitor.exitTime.toDate())}</p>` : ''}
             </div>
         </div>
     `;

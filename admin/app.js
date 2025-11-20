@@ -189,21 +189,37 @@ async function loadResidents() {
 }
 
 async function loadVisitors() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    // Get selected date from date picker
+    const dateInput = document.getElementById('visitor-date');
+    let selectedDate = dateInput && dateInput.value ? new Date(dateInput.value) : new Date();
+    selectedDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(selectedDate.getDate() + 1);
+
     const snapshot = await db.collection('visitors')
-        .where('entryTime', '>=', today)
+        .where('entryTime', '>=', selectedDate)
+        .where('entryTime', '<', nextDay)
         .orderBy('entryTime', 'desc')
         .get();
-    
+
     state.visitors = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
     }));
-    
+
     renderVisitors();
 }
+
+// Listen for date picker changes
+document.addEventListener('DOMContentLoaded', () => {
+    const dateInput = document.getElementById('visitor-date');
+    if (dateInput) {
+        // Set default to today
+        const today = new Date();
+        dateInput.value = today.toISOString().slice(0, 10);
+        dateInput.addEventListener('change', loadVisitors);
+    }
+});
 
 async function loadHistory() {
     const sevenDaysAgo = new Date();

@@ -10,7 +10,11 @@ A professional Progressive Web App (PWA) for managing gate entries in a 48-house
 - ✅ Light/Dark mode themes
 - ✅ Fully responsive mobile-first design
 - ✅ Offline support with Service Worker
-- ✅ PWA installable on mobile devices
+- ✅ PWA installable on mobile devices (Android & iOS)
+- ✅ System notifications for visitor approvals (with platform-specific limitations)
+- ✅ Auto-refresh on app resume for up-to-date data
+- ✅ Toast notifications for user feedback (including login errors)
+- ✅ iOS install banner for user guidance
 
 ---
 
@@ -127,10 +131,6 @@ You need to create app icons for the PWA. Here are two options:
    - `icon-144x144.png`
    - `icon-152x152.png`
    - `icon-192x192.png`
-   - `icon-384x384.png`
-   - `icon-512x512.png`
-
-#### Option B: Create Simple Icons (Quick)
 
 Use an online tool like [Canva](https://www.canva.com/) to create simple icons:
 1. Create a 512x512px design

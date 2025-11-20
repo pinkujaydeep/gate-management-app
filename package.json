@@ -1,7 +1,7 @@
 {
   "name": "gate-management-pwa",
   "version": "1.0.0",
-  "description": "Professional Gate Management PWA for Society with 48 Houses",
+  "description": "Professional Gate Management PWA for Society",
   "main": "index.html",
   "scripts": {
     "dev": "live-server --port=3000",

@@ -141,56 +141,39 @@ async function handleLogin(e) {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
     setButtonLoading(submitBtn, true);
-    
     try {
         let email, password, houseNumber;
-        
         if (state.selectedRole === 'guard') {
             email = elements.email.value.trim();
             password = elements.password.value;
         } else {
-            // Resident login
             email = elements.residentEmail.value.trim();
             password = elements.password.value;
             houseNumber = parseInt(elements.houseNumberLogin.value);
-            
-            // Validate house number
             if (!houseNumber || houseNumber < 1 || houseNumber > 48) {
                 throw new Error('INVALID_HOUSE_NUMBER');
             }
         }
-        
-        // Authenticate with Firebase
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const userId = userCredential.user.uid;
-        
-        // Check/create user profile in Firestore
         const userDoc = await db.collection('users').doc(userId).get();
-        
         if (!userDoc.exists) {
-            // First time login - create user profile
             const userData = {
                 email: email,
                 role: state.selectedRole,
                 createdAt: firebase.firestore.Timestamp.now()
             };
-            
             if (state.selectedRole === 'resident') {
                 userData.houseNumber = houseNumber;
             }
-            
             await db.collection('users').doc(userId).set(userData);
             showToast('Account setup complete!', 'success');
         } else {
-            // Existing user - validate role matches
             const userData = userDoc.data();
-            
             if (userData.role !== state.selectedRole) {
                 await auth.signOut();
                 throw new Error(`ROLE_MISMATCH_${userData.role.toUpperCase()}`);
             }
-            
-            // For residents, update house number if changed
             if (state.selectedRole === 'resident') {
                 if (userData.houseNumber !== houseNumber) {
                     await db.collection('users').doc(userId).update({
@@ -200,20 +183,27 @@ async function handleLogin(e) {
                 }
             }
         }
-        
         showToast('Login successful!', 'success');
     } catch (error) {
         console.error('Login error:', error);
-        
-        // Custom error messages
+        let message = '';
         if (error.message === 'INVALID_HOUSE_NUMBER') {
-            showToast('House number must be between 1 and 48', 'error');
+            message = 'House number must be between 1 and 48';
         } else if (error.message === 'ROLE_MISMATCH_GUARD') {
-            showToast('This account is registered as a guard. Please select "Security Guard" option.', 'error');
+            message = 'This account is registered as a guard. Please select "Security Guard" option.';
         } else if (error.message === 'ROLE_MISMATCH_RESIDENT') {
-            showToast('This account is registered as a resident. Please select "House Owner" option.', 'error');
+            message = 'This account is registered as a resident. Please select "House Owner" option.';
         } else {
-            showToast(getErrorMessage(error.code), 'error');
+            message = getErrorMessage(error.code);
+        }
+        showToast(message, 'error');
+        // Focus password field and shake toast for better UX
+        elements.password.classList.add('input-error');
+        setTimeout(() => elements.password.classList.remove('input-error'), 600);
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.classList.add('shake');
+            setTimeout(() => toast.classList.remove('shake'), 600);
         }
     } finally {
         setButtonLoading(submitBtn, false);
@@ -725,6 +715,13 @@ function filterResidentHistory(filter) {
 
 // Event Listeners
 function setupEventListeners() {
+        // Auto-refresh on app resume (Android/iOS)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                showToast('Refreshing...', 'info');
+                loadAppData();
+            }
+        });
     elements.loginForm?.addEventListener('submit', handleLogin);
     elements.guardLogoutBtn?.addEventListener('click', handleLogout);
     elements.residentLogoutBtn?.addEventListener('click', handleLogout);

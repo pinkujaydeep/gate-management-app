@@ -4,3 +4,5 @@ node_modules/
 *.log
 .netlify/
 dist/
+firestore.rules
+package-lock.json

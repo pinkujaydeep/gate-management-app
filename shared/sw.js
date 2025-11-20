@@ -138,8 +138,8 @@ self.addEventListener('push', (event) => {
     
     const options = {
         body: data.body || 'New notification',
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
+        icon: '/shared/icons/icon-192x192.png',
+        badge: '/shared/icons/icon-72x72.png',
         vibrate: [200, 100, 200],
         data: data
     };

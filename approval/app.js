@@ -29,10 +29,17 @@ const elements = {
     // Guard App
     guardApp: document.getElementById('guard-app'),
     guardVisitorForm: document.getElementById('guard-visitor-form'),
-    guardSuccessMessage: document.getElementById('guard-success-message'),
+    guardPendingList: document.getElementById('guard-pending-list'),
+    guardHistoryList: document.getElementById('guard-history-list'),
+    guardPendingCount: document.getElementById('guard-pending-count'),
+    guardApprovedCount: document.getElementById('guard-approved-count'),
+    guardRejectedCount: document.getElementById('guard-rejected-count'),
     guardLogoutBtn: document.getElementById('guard-logout-btn'),
     guardThemeToggle: document.getElementById('guard-theme-toggle'),
+    guardRefreshBtn: document.getElementById('guard-refresh-btn'),
     guardHouseNumber: document.getElementById('guard-house-number'),
+    guardAddVisitorBtn: document.getElementById('guard-add-visitor-btn'),
+    addVisitorModal: document.getElementById('add-visitor-modal'),
     
     // Resident App
     residentApp: document.getElementById('resident-app'),
@@ -273,8 +280,34 @@ async function loadAppData() {
 }
 
 async function loadGuardData() {
-    // Guard only needs to submit entries, no data loading required
-    console.log('Guard interface ready');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Real-time listener for all visitors created today
+    db.collection('visitors')
+        .onSnapshot(snapshot => {
+            // Filter and sort in JavaScript instead of Firestore
+            state.visitors = snapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }))
+                .filter(visitor => {
+                    const visitorDate = visitor.createdAt?.toDate() || new Date(0);
+                    return visitorDate >= today;
+                })
+                .sort((a, b) => {
+                    const dateA = a.createdAt?.toDate() || new Date(0);
+                    const dateB = b.createdAt?.toDate() || new Date(0);
+                    return dateB - dateA; // descending order
+                });
+            updateGuardStats();
+            renderGuardPending();
+            renderGuardHistory();
+        }, error => {
+            console.error('Error loading visitors:', error);
+            showToast('Failed to load visitor data', 'error');
+        });
 }
 
 async function loadResidentData() {
@@ -311,17 +344,194 @@ async function loadResidentData() {
 }
 
 // Guard Functions
+function updateGuardStats() {
+    const pending = state.visitors.filter(v => v.status === 'pending').length;
+    const approved = state.visitors.filter(v => v.approvalStatus === 'approved').length;
+    const rejected = state.visitors.filter(v => v.approvalStatus === 'rejected').length;
+    
+    elements.guardPendingCount.textContent = pending;
+    elements.guardApprovedCount.textContent = approved;
+    elements.guardRejectedCount.textContent = rejected;
+}
+
+function renderGuardPending() {
+    const pending = state.visitors.filter(v => v.status === 'pending');
+    const container = elements.guardPendingList;
+    
+    if (pending.length === 0) {
+        container.innerHTML = getEmptyState('No pending approvals', 'All visitor requests have been processed');
+        return;
+    }
+    
+    // Show only first 3 by default, add Show More if more
+    let showCount = 3;
+    let html = pending.slice(0, showCount).map(visitor => createGuardPendingCard(visitor)).join('');
+    if (pending.length > showCount) {
+        html += `<button class="btn btn-secondary btn-show-more" onclick="window.showMorePending()">Show More</button>`;
+    }
+    container.innerHTML = html;
+    window._pendingShowCount = showCount;
+    window._pendingData = pending;
+}
+
+function createGuardPendingCard(visitor) {
+    const time = visitor.createdAt?.toDate() || new Date();
+    
+    return `
+        <div class="approval-card">
+            <div class="approval-header">
+                <div class="visitor-avatar">👤</div>
+                <div class="visitor-info">
+                    <h3>${escapeHtml(visitor.name)}</h3>
+                    <p class="text-muted">${escapeHtml(visitor.phone)}</p>
+                    <p class="time-badge">${formatTimeAgo(time)}</p>
+                </div>
+                <div class="status-badge status-pending">⏳ Pending</div>
+            </div>
+            <div class="approval-details">
+                <div class="detail-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span><strong>House:</strong> ${visitor.houseNumber}</span>
+                </div>
+                <div class="detail-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <polyline points="17 11 19 13 23 9"></polyline>
+                    </svg>
+                    <span><strong>Purpose:</strong> ${escapeHtml(visitor.purpose)}</span>
+                </div>
+                ${visitor.vehicle ? `
+                <div class="detail-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                        <path d="M19 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                        <path d="M7 15h2m6 0h2m-8 0V7h8v8"></path>
+                    </svg>
+                    <span><strong>Vehicle:</strong> ${escapeHtml(visitor.vehicle)}</span>
+                </div>
+                ` : ''}
+                ${visitor.notes ? `
+                <div class="detail-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span><strong>Note:</strong> ${escapeHtml(visitor.notes)}</span>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function renderGuardHistory() {
+    const filter = document.querySelector('#guard-app .filter-tab.active')?.dataset.filter || 'all';
+    let filtered = state.visitors.filter(v => v.status !== 'pending');
+    
+    if (filter === 'approved') {
+        filtered = filtered.filter(v => v.approvalStatus === 'approved');
+    } else if (filter === 'rejected') {
+        filtered = filtered.filter(v => v.approvalStatus === 'rejected');
+    }
+    
+    const container = elements.guardHistoryList;
+    
+    if (filtered.length === 0) {
+        container.innerHTML = getEmptyState('No history', 'Approved/rejected visitors will appear here');
+        return;
+    }
+    
+    container.innerHTML = filtered.map(visitor => createGuardHistoryCard(visitor)).join('');
+}
+
+function createGuardHistoryCard(visitor) {
+    const time = visitor.createdAt?.toDate() || new Date();
+    const entryTime = visitor.entryTime?.toDate();
+    const isApproved = visitor.approvalStatus === 'approved';
+    
+    return `
+        <div class="history-card ${isApproved ? 'approved' : 'rejected'}">
+            <div class="history-status">
+                ${isApproved ? '✅' : '❌'}
+            </div>
+            <div class="history-info">
+                <h4>${escapeHtml(visitor.name)}</h4>
+                <p class="text-muted">${escapeHtml(visitor.phone)} • House ${visitor.houseNumber}</p>
+                <div class="history-meta">
+                    <span>${escapeHtml(visitor.purpose)}</span>
+                    <span>•</span>
+                    <span>${formatTime(time)}</span>
+                </div>
+                ${isApproved && entryTime ? `<p class="entry-time">✅ Approved: ${formatTime(entryTime)}</p>` : ''}
+                ${!isApproved && visitor.rejectedAt ? `<p class="entry-time">❌ Rejected: ${formatTime(visitor.rejectedAt.toDate())}</p>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function filterGuardHistory(filter) {
+    document.querySelectorAll('#guard-app .filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+    });
+    renderGuardHistory();
+}
+
+function openAddVisitorModal() {
+    console.log('[DEBUG] openAddVisitorModal called');
+    elements.addVisitorModal.classList.remove('hidden');
+    elements.addVisitorModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAddVisitorModal() {
+    elements.addVisitorModal.classList.remove('active');
+    elements.addVisitorModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    elements.guardVisitorForm.reset();
+}
+
 async function handleGuardVisitorSubmit(e) {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
-    
+
+    // Validation
+    const name = document.getElementById('guard-visitor-name').value.trim();
+    const phone = document.getElementById('guard-visitor-phone').value.trim();
+    const houseNumber = parseInt(document.getElementById('guard-house-number').value);
+    const purpose = document.getElementById('guard-purpose').value;
+    const vehicle = document.getElementById('guard-vehicle').value.trim() || null;
+    const notes = document.getElementById('guard-notes').value.trim() || null;
+
+    if (!name || !phone || !houseNumber || !purpose) {
+        showToast('Please fill all required fields', 'error');
+        setButtonLoading(submitBtn, false);
+        return;
+    }
+    if (!/^\d{10}$/.test(phone)) {
+        showToast('Enter a valid 10-digit mobile number', 'error');
+        setButtonLoading(submitBtn, false);
+        return;
+    }
+    if (name.length > 40) {
+        showToast('Name too long', 'error');
+        setButtonLoading(submitBtn, false);
+        return;
+    }
+
     const visitorData = {
-        name: document.getElementById('guard-visitor-name').value,
-        phone: document.getElementById('guard-visitor-phone').value,
-        houseNumber: parseInt(document.getElementById('guard-house-number').value),
-        purpose: document.getElementById('guard-purpose').value,
-        vehicle: document.getElementById('guard-vehicle').value || null,
-        notes: document.getElementById('guard-notes').value || null,
+        name,
+        phone,
+        houseNumber,
+        purpose,
+        vehicle,
+        notes,
         status: 'pending',
         approvalStatus: null,
         createdBy: state.currentUser.email,
@@ -329,19 +539,12 @@ async function handleGuardVisitorSubmit(e) {
         entryTime: null,
         exitTime: null
     };
-    
+
     setButtonLoading(submitBtn, true);
     try {
         await db.collection('visitors').add(visitorData);
-        
-        // Show success message
-        elements.guardSuccessMessage.classList.remove('hidden');
-        setTimeout(() => {
-            elements.guardSuccessMessage.classList.add('hidden');
-        }, 5000);
-        
         showToast(`Notification sent to House ${visitorData.houseNumber}`, 'success');
-        elements.guardVisitorForm.reset();
+        closeAddVisitorModal();
     } catch (error) {
         console.error('Add visitor error:', error);
         showToast('Failed to submit visitor', 'error');
@@ -358,9 +561,11 @@ function updateResidentStats() {
     elements.residentPendingCount.textContent = pending;
     elements.residentApprovedCount.textContent = approved;
     
-    // Show notification if there are pending visitors
+    // Show notification and repeat sound if there are pending visitors
     if (pending > 0 && document.hidden) {
-        showNotification(`You have ${pending} pending visitor${pending > 1 ? 's' : ''}`);
+        showNotification(`You have ${pending} pending visitor${pending > 1 ? 's' : ''}`, true);
+    } else {
+        stopNotificationSoundLoop();
     }
 }
 
@@ -369,6 +574,7 @@ function renderResidentPending() {
     const container = elements.residentPendingList;
     
     if (pending.length === 0) {
+        stopNotificationSoundLoop();
         container.innerHTML = getEmptyState('No pending requests', 'You\'ll be notified when someone visits');
         return;
     }
@@ -486,6 +692,7 @@ async function approveVisitor(visitorId) {
             approvedBy: state.currentUser.email,
             entryTime: firebase.firestore.Timestamp.now()
         });
+        stopNotificationSoundLoop();
         showToast('Visitor approved! They can enter now.', 'success');
     } catch (error) {
         console.error('Approve visitor error:', error);
@@ -501,6 +708,7 @@ async function rejectVisitor(visitorId) {
             rejectedAt: firebase.firestore.Timestamp.now(),
             rejectedBy: state.currentUser.email
         });
+        stopNotificationSoundLoop();
         showToast('Visitor request rejected', 'success');
     } catch (error) {
         console.error('Reject visitor error:', error);
@@ -522,9 +730,17 @@ function setupEventListeners() {
     elements.residentLogoutBtn?.addEventListener('click', handleLogout);
     
     elements.guardVisitorForm?.addEventListener('submit', handleGuardVisitorSubmit);
+    if (elements.guardAddVisitorBtn) {
+        elements.guardAddVisitorBtn.addEventListener('click', openAddVisitorModal);
+    }
     
     elements.guardThemeToggle?.addEventListener('click', toggleTheme);
     elements.residentThemeToggle?.addEventListener('click', toggleTheme);
+    
+    elements.guardRefreshBtn?.addEventListener('click', () => {
+        showToast('Refreshing...', 'info');
+        loadGuardData();
+    });
     
     elements.residentRefreshBtn?.addEventListener('click', () => {
         showToast('Refreshing...', 'info');
@@ -539,18 +755,23 @@ function showLogin() {
     elements.residentApp.classList.add('hidden');
     elements.roleSelection.classList.remove('hidden');
     elements.loginForm.classList.add('hidden');
+    // Hide FAB on login screen
+    var fab = document.getElementById('fab-add-visitor');
+    if (fab) fab.style.display = 'none';
 }
 
 function showAppForRole() {
     elements.loginScreen.classList.add('hidden');
-    
+    var fab = document.getElementById('fab-add-visitor');
     if (state.userRole === 'guard') {
         elements.guardApp.classList.remove('hidden');
         elements.residentApp.classList.add('hidden');
+        if (fab) fab.style.display = 'flex';
     } else {
         elements.guardApp.classList.add('hidden');
         elements.residentApp.classList.remove('hidden');
         elements.residentHouseNumber.textContent = state.houseNumber;
+        if (fab) fab.style.display = 'none';
     }
 }
 
@@ -602,6 +823,24 @@ function updateThemeIcon(theme) {
 }
 
 // Toast Notifications
+// Unlock audio playback on first user interaction (required by browsers)
+function unlockNotificationAudio() {
+    let audio = document.getElementById('notification-audio');
+    if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'notification-audio';
+        audio.src = '/shared/notification.mp3';
+        audio.preload = 'auto';
+        document.body.appendChild(audio);
+    }
+    audio.muted = true;
+    audio.play().catch(() => {});
+    setTimeout(() => { audio.pause(); audio.muted = false; }, 100);
+    window.removeEventListener('pointerdown', unlockNotificationAudio);
+    window.removeEventListener('keydown', unlockNotificationAudio);
+}
+window.addEventListener('pointerdown', unlockNotificationAudio, { once: true });
+window.addEventListener('keydown', unlockNotificationAudio, { once: true });
 function showToast(message, type = 'info') {
     elements.toast.textContent = message;
     elements.toast.className = `toast ${type}`;
@@ -614,13 +853,75 @@ function showToast(message, type = 'info') {
 }
 
 // Browser Notifications
-function showNotification(message) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('GateKeeper', {
-            body: message,
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-72x72.png'
-        });
+// Notification sound loop control
+let notificationSoundInterval = null;
+function startNotificationSoundLoop() {
+    stopNotificationSoundLoop();
+    let audio = document.getElementById('notification-audio');
+    if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'notification-audio';
+        audio.src = '/shared/notification.mp3';
+        audio.preload = 'auto';
+        document.body.appendChild(audio);
+    }
+    // Play immediately, then repeat every 3 seconds
+    try { audio.currentTime = 0; audio.play(); } catch (e) {}
+    notificationSoundInterval = setInterval(() => {
+        try { audio.currentTime = 0; audio.play(); } catch (e) {}
+    }, 3000);
+}
+function stopNotificationSoundLoop() {
+    if (notificationSoundInterval) {
+        clearInterval(notificationSoundInterval);
+        notificationSoundInterval = null;
+    }
+    let audio = document.getElementById('notification-audio');
+    if (audio) { try { audio.pause(); audio.currentTime = 0; } catch (e) {} }
+}
+
+function showNotification(message, repeatSound) {
+    if (repeatSound) {
+        startNotificationSoundLoop();
+    } else {
+        stopNotificationSoundLoop();
+        // Play once
+        let audio = document.getElementById('notification-audio');
+        if (!audio) {
+            audio = document.createElement('audio');
+            audio.id = 'notification-audio';
+            audio.src = '/shared/notification.mp3';
+            audio.preload = 'auto';
+            document.body.appendChild(audio);
+        }
+        try { audio.currentTime = 0; audio.play(); } catch (e) {}
+    }
+
+    // Show browser notification if possible
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            new Notification('GateKeeper', {
+                body: message,
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-72x72.png'
+            });
+        } else if (Notification.permission === 'default') {
+            Notification.requestPermission().then(function(permission) {
+                if (permission === 'granted') {
+                    new Notification('GateKeeper', {
+                        body: message,
+                        icon: '/icons/icon-192x192.png',
+                        badge: '/icons/icon-72x72.png'
+                    });
+                } else {
+                    showToast(message, 'info');
+                }
+            });
+        } else {
+            showToast(message, 'info');
+        }
+    } else {
+        showToast(message, 'info');
     }
 }
 
@@ -699,6 +1000,35 @@ window.backToRoleSelection = backToRoleSelection;
 window.approveVisitor = approveVisitor;
 window.rejectVisitor = rejectVisitor;
 window.filterResidentHistory = filterResidentHistory;
+window.filterGuardHistory = filterGuardHistory;
+window.openAddVisitorModal = openAddVisitorModal;
+window.closeAddVisitorModal = closeAddVisitorModal;
+
+// Toggle History Section
+window.toggleHistorySection = function() {
+    const section = document.getElementById('history-section-content');
+    const icon = document.getElementById('history-toggle-icon');
+    if (section.style.display === 'none') {
+        section.style.display = '';
+        icon.innerHTML = '&#9660;';
+    } else {
+        section.style.display = 'none';
+        icon.innerHTML = '&#9654;';
+    }
+};
+
+// Show More Pending
+window.showMorePending = function() {
+    const container = elements.guardPendingList;
+    let showCount = (window._pendingShowCount || 3) + 5;
+    let pending = window._pendingData || [];
+    let html = pending.slice(0, showCount).map(visitor => createGuardPendingCard(visitor)).join('');
+    if (pending.length > showCount) {
+        html += `<button class=\"btn btn-secondary btn-show-more\" onclick=\"window.showMorePending()\">Show More</button>`;
+    }
+    container.innerHTML = html;
+    window._pendingShowCount = showCount;
+};
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {

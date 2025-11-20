@@ -242,6 +242,10 @@
     border-left: 4px solid var(--success);
 }
 
+.stat-box.rejected-box {
+    border-left: 4px solid var(--danger);
+}
+
 .stat-number {
     font-size: 2rem;
     font-weight: 700;
@@ -539,52 +543,87 @@
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-    .approval-actions {
-        grid-template-columns: 1fr;
+    /* Guard Dashboard Mobile Optimization */
+    .header {
+        padding: 0.75rem 1rem;
     }
     
-    .stats-summary {
-        grid-template-columns: 1fr;
-    }
-    
-    .role-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    /* Mobile-specific input adjustments */
-    input[type="email"],
-    input[type="number"],
-    input[type="password"],
-    input[type="text"],
-    select {
-        font-size: 16px; /* Prevents zoom on iOS */
-        padding: 0.875rem;
-    }
-    
-    .form-group label {
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .text-muted,
-    small.text-muted {
-        font-size: 0.75rem;
-        line-height: 1.4;
-    }
-    
-    /* Adjust button sizing */
-    .btn {
-        padding: 0.875rem 1rem;
+    .header-left h1,
+    .header-title h1 {
         font-size: 1rem;
     }
     
-    .btn-back {
-        padding: 0.625rem 0.5rem;
-        font-size: 0.875rem;
-        margin-bottom: 1rem;
+    .header-right {
+        gap: 0.5rem;
     }
     
-    /* Fix role selection cards on mobile */
+    .icon-btn {
+        padding: 0.4rem;
+    }
+    
+    .icon-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.9375rem;
+    }
+    
+    /* Stats Summary Cards */
+    .stats-summary {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .stat-box {
+        padding: 1rem;
+    }
+    
+    .stat-box h3 {
+        font-size: 1.75rem;
+    }
+    
+    .stat-box p {
+        font-size: 0.8125rem;
+    }
+    
+    /* Main Content Spacing */
+    .main-content {
+        padding: 0.75rem;
+        padding-top: 70px;
+    }
+    
+    /* Section Headers */
+    .section-header,
+    .view-header {
+        padding: 1rem 0;
+    }
+    
+    .section-header h2,
+    .view-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    /* Approval Actions */
+    .approval-actions {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .approval-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Role Cards */
+    .role-cards {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
     .role-card {
         padding: 1.25rem 1rem;
     }
@@ -593,7 +632,123 @@
         font-size: 2.5rem;
     }
     
-    /* Login form mobile adjustments */
+    /* Forms and Inputs */
+    input[type="email"],
+    input[type="number"],
+    input[type="password"],
+    input[type="text"],
+    input[type="tel"],
+    select,
+    textarea {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        padding: 0.875rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-muted,
+    small.text-muted,
+    small {
+        font-size: 0.75rem;
+        line-height: 1.4;
+    }
+    
+    /* Modals */
+    .modal-content {
+        max-height: 85vh;
+        margin: 0.5rem;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.125rem;
+    }
+    
+    .modal-content form {
+        padding: 0 1rem 1rem 1rem;
+    }
+    
+    .modal-actions {
+        padding: 1rem;
+        flex-direction: column;
+    }
+    
+    .modal-actions .btn {
+        width: 100%;
+    }
+    
+    /* Pending Items List */
+    .pending-item {
+        padding: 1rem;
+    }
+    
+    .pending-item-header h4 {
+        font-size: 1rem;
+    }
+    
+    .pending-item-details {
+        gap: 0.5rem;
+        margin: 0.75rem 0;
+    }
+    
+    .detail-row {
+        font-size: 0.8125rem;
+    }
+    
+    /* Cards and Lists */
+    .visitor-card,
+    .resident-card {
+        padding: 1rem;
+    }
+    
+    .visitor-card-header h4 {
+        font-size: 1rem;
+    }
+    
+    /* Empty States */
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state svg {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .empty-state h3 {
+        font-size: 1rem;
+    }
+    
+    .empty-state p {
+        font-size: 0.8125rem;
+    }
+    
+    /* Toast Notifications */
+    .toast {
+        min-width: 90%;
+        max-width: 90%;
+        bottom: 1rem;
+        font-size: 0.875rem;
+        padding: 0.875rem 1rem;
+    }
+    
+    /* Back Button */
+    .btn-back {
+        padding: 0.625rem 0.5rem;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+}
     .login-form h3 {
         font-size: 1.25rem;
     }
@@ -632,4 +787,139 @@
 
 .notification-prompt button {
     white-space: nowrap;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    position: relative;
+    background: var(--bg-primary);
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px var(--shadow-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+    .modal-content {
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
 }

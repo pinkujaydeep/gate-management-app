@@ -627,10 +627,6 @@ function setupEventListeners() {
     // Theme
     elements.themeToggle?.addEventListener('click', toggleTheme);
     
-    // Visitor Modal
-    document.getElementById('add-visitor-btn')?.addEventListener('click', () => openVisitorModal());
-    document.getElementById('new-visitor-btn')?.addEventListener('click', () => openVisitorModal());
-    
     // Resident Modal
     document.getElementById('add-resident-btn')?.addEventListener('click', () => openResidentModal());
     

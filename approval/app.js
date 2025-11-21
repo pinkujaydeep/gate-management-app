@@ -248,10 +248,12 @@ async function loadUserProfile() {
         console.error('Load user profile error:', error);
         showToast(error.message || 'Failed to load profile', 'error');
         
-        // Force logout on profile error
-        setTimeout(async () => {
-            await auth.signOut();
-        }, 2000);
+        // Only force logout on critical errors, not permission errors
+        if (error.message && error.message.includes('Invalid') && !error.code?.includes('permission')) {
+            setTimeout(async () => {
+                await auth.signOut();
+            }, 2000);
+        }
     }
 }
 
@@ -680,6 +682,7 @@ function renderResidentHistory() {
 function createResidentHistoryCard(visitor) {
     const time = visitor.createdAt?.toDate() || new Date();
     const entryTime = visitor.entryTime?.toDate();
+    const exitTime = visitor.exitTime?.toDate();
     const isApproved = visitor.approvalStatus === 'approved';
     
     return `
@@ -695,7 +698,8 @@ function createResidentHistoryCard(visitor) {
                     <span>•</span>
                     <span>${formatTime(time)}</span>
                 </div>
-                ${entryTime ? `<p class="entry-time">Entered: ${formatTime(entryTime)}</p>` : ''}
+                ${entryTime ? `<p class="entry-time">✅ Entered: ${formatTime(entryTime)}</p>` : ''}
+                ${exitTime ? `<p class="entry-time">🚪 Exited: ${formatTime(exitTime)}</p>` : ''}
             </div>
         </div>
     `;
